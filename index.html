@@ -10,14 +10,14 @@
       integrity="sha384-Xi8rHCmBmhbuyyhbI88391ZKP2dmfnOl4rT9ZfRI7mLTdk1wblIUnrIq35nqwEvC" crossorigin="anonymous">
       
     <link defer async rel="stylesheet" href="./style.css">
-    <script src="./perms.js"></script>
-    <script>window.addEventListener("load", (load) => {
+    <script>window.addEventListener("load", async (load) => {
 
-      let equation = Template.equation.cloneNode(true);
+      const Equation = (await import("./perms.js")).default;
 
-      document.querySelector("main").append(equation);
+      let equation = Equation.Create();
 
-      new Equation(equation).randomize();
+      equation.randomize();
+      document.querySelector("main").append(equation.root);
 
       fetch("./docs/ReadMe.html")
         .then((res) => res.text())

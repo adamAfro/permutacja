@@ -332,7 +332,7 @@ class Permutation {
 }
 
 /** Symbolizes mathematical equation of permutations and holds them */
-class Equation {
+export default class Equation {
 
   /** @type HTMLElement; Container element */
   root;
@@ -543,5 +543,10 @@ class Equation {
         });
       }
     }
+  }
+
+  static Create() {
+
+    return new this(Template.equation.cloneNode(true));
   }
 }
