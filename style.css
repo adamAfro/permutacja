@@ -1,0 +1,53 @@
+button, input, select {
+  
+  border: 0; padding: 0; margin: 0;
+  background: inherit;
+  font-family: inherit;
+  font-size: 100%;
+  width: min-content;
+}
+
+.button {
+  
+  
+  cursor: pointer;
+  font-family: monospace;
+  
+  margin: .25em;
+  
+  transition: transform .5s;
+  border-radius: 1em;
+}
+
+.button:hover, .button:focus, .button:active { 
+  
+  transform: scale(1.5);
+
+} .button:focus, .button:active { outline: thin solid;}
+
+.symbol { font-size: 170%; margin: 0 .5em;}
+.symbol + .symbol { margin-left: 0;}
+.equation .sign { cursor: alias;}
+
+.equation .placeholder {
+  
+  cursor: copy; border-radius: 1em;
+} 
+
+.permutation .interactions {
+  transform: translateX(.5em);
+}
+
+.permutation .exponent input { display: none;}
+  .permutation .exponent input + .value {
+    cursor: pointer;
+    opacity:.1; transition: opacity .5s;
+  }
+  .permutation .exponent input:checked + .value { opacity:1 }
+
+
+.permutation .column .value.replaced {
+
+  transform: scale(1.1);
+  transition: transform .5s;
+}
