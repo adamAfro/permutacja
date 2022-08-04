@@ -22,7 +22,7 @@ try {
 
 
   /** @type HTMLElement, empty space */
-  Template.space = parse(/*HTML*/`
+  Template.holder = parse(/*HTML*/`
   
     <div style="display:inline-block"></div>
   
@@ -225,13 +225,36 @@ class Permutation {
   }
 
   /** Aligns top row so that it is in order */
-  sort() {
+  async sort() {
+
+    let columns = this.root.querySelectorAll(".column");
+    let animations = [];
+    for (let i = 0, n = this.length; i < n; i++) {
+
+      let replacement = this.columns
+        .find((column) => (column.top.value == i + 1))
+        .root;
+      
+      let replaced = columns[i];
+      if (replaced === replacement)
+        continue;
+
+      let diff = Layout.diff(replaced, replacement);
+      animations.push(anime({ 
+        targets: replacement, 
+        translateX: diff.left, 
+        translateY: diff.top 
+      }));
+    }
+
+    await Promise.all(animations.map((anim) => anim.finished));
 
     let anchor = this.opening;
     for (let i = 0, n = this.length; i < n; i++) {
 
       let next = this.columns.find((column) => (column.top.value == i + 1));
 
+      next.root.style.transform = "";
       anchor.after(next.root);
       anchor = next.root;
     }
@@ -475,25 +498,25 @@ export default class Equation {
       console.info("defeault inversion: inversion detection is not implemented yet");
       moved.inversion.checked = !moved.inversion.checked;
 
-      let space = Template.space.cloneNode("true");
+      let holder = Template.holder.cloneNode("true");
 
-      space.style.width = "0";
-      space.style.verticalAlign = "top";
+      holder.style.width = "0";
+      holder.style.verticalAlign = "top";
       if (pos == "start")
-        this.sign.after(space);
+        this.sign.after(holder);
       else if (pos == "end")
-        this.root.append(space);
+        this.root.append(holder);
       else
         throw "unnkown position";
 
       let grow = anime({
-        targets: space,
+        targets: holder,
         width: `${moved.root.offsetWidth}px`,
         easing: "linear",
         duration: 230
       });
 
-      let diff = Layout.diff(space, moved.root);
+      let diff = Layout.diff(holder, moved.root);
       let move = anime({
         targets: moved.root,
         translateX: diff.left,
@@ -503,22 +526,22 @@ export default class Equation {
       await move.finished;
 
       let anchor = moved.root.previousElementSibling;
-      space.replaceWith(moved.root);
-      anchor.after(space);
+      holder.replaceWith(moved.root);
+      anchor.after(holder);
 
       move.pause(), move.reset();
       moved.root.style.transform = "";
-      space.style.transform = "";
+      holder.style.transform = "";
 
       let shrink = anime({
-        targets: space,
+        targets: holder,
         width: "0",
         easing: "linear",
         duration: 230
       });
 
       await shrink.finished;
-      space.remove();
+      holder.remove();
 
       this.refresh();
 
