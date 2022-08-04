@@ -249,11 +249,15 @@ class Permutation {
       return;
     
     let anchor = replacement.root.previousElementSibling;
-    if (anchor == replaced.root)
-      anchor = replaced.root.previousElementSibling;
+    if (anchor === replaced.root) {
 
-    replaced.root.replaceWith(replacement.root);
-    anchor.after(replaced.root);
+      anchor.before(replacement.root);  
+
+    } else {
+
+      replaced.root.replaceWith(replacement.root);
+      anchor.after(replaced.root);
+    }
   }
 
   /** Handles dragging of a column's top */
