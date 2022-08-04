@@ -62,7 +62,7 @@ try {
   Template.column = parse(/*HTML*/ `
     
     <div class="column" style="position:relative;display:inline-block">
-      <select class="value top" style="display:block"></select>
+      <button class="value top" draggable="true" style="display:block"></button>
       <select class="value bottom" style="display:block"></select>
     </div>
 
@@ -116,7 +116,7 @@ class Column {
   /** @type HTMLElement; Container-element */
   root;
 
-  /** @type HTMLSelectElement; Element with top value */
+  /** @type HTMLButtonElement; Element with top value */
   top;
   
   /** @type HTMLSelectElement;  Element with bottom value */
@@ -135,27 +135,21 @@ class Column {
     return this.top.children.length;
   }
 
-  /** Changes possible options to select - limits them or adds */
+  /** Changes possible options for the bottom to select - limits them or adds */
   set range(range = 0) {
 
     let previous = this.range;
     let change = range - previous;
     if (change > 0) for (let i = 0; i < change; i++) {
 
-      let options = [
-        Template.option.cloneNode(true),
-        Template.option.cloneNode(true)
-      ];
-      
-      options[0].textContent = options[0].value = previous + i + 1;
-      options[1].textContent = options[1].value = previous + i + 1;
+      let option = Template.option.cloneNode(true);
+     
+      option.textContent = option.value = previous + i + 1;
 
-      this.top.insertAdjacentElement("beforeend", options[0]);
-      this.bottom.insertAdjacentElement("beforeend", options[1]);
+      this.bottom.insertAdjacentElement("beforeend", option);
 
     } else if (change < 0) for (let i = previous - 1; i > range - 1; i--) {
 
-      this.top.options[i].remove();
       this.bottom.options[i].remove();
     }
   }
@@ -226,29 +220,62 @@ class Permutation {
 
       let holder = column.top.value;
 
-      column.top.value = column.bottom.value;
+      column.top.value = column.top.textContent = column.bottom.value;
       column.bottom.value = holder;
     }
 
     this.inversion.checked = !this.inversion.checked;
   }
 
-  /** Applies changed column - removes its duplicate - one that had the value before */
-  changehook(column, position) {
+  /** Applies drag effect on column that is dragged over another and the another one */
+  drophook(/** @type DragEvent */ event) {
 
-    if (!["top", "bottom"].includes(position))
-      throw new Error("invalid position");
+    event.preventDefault();
+
+    let replaced = this.columns
+      .find((search) => (search.top == event.currentTarget));
+
+    let value = new Number(event.dataTransfer.getData("text/plain"));
+    if (!value)
+      throw "smthng wnt wrng";
+
+    let replacement = this.columns
+      .find((search) => (search.top.value == value))
+
+    if ((!replaced || !replacement) || replacement === replaced)
+      return;
+
+    if (replacement.root.parentElement != replaced.root.parentElement)
+      return;
+    
+    let anchor = replacement.root.previousElementSibling;
+    if (anchor == replaced.root)
+      anchor = replaced.root.previousElementSibling;
+
+    replaced.root.replaceWith(replacement.root);
+    anchor.after(replaced.root);
+  }
+
+  /** Handles dragging of a column's top */
+  dragging(/** @type DragEvent */ event) {
+
+    event.dataTransfer.setData("text/plain", event.currentTarget.value);
+    event.dataTransfer.setDragImage(event.currentTarget.parentElement, 0, 0);
+  }
+
+  /** Applies changed bottom of a column - changes its duplicate - one that had the value before */
+  selecthook(column) {
 
     let replaced = this.columns.filter((inclusion) => (inclusion !== column))
-      .find((search) => (search[position].value == column[position].value))
+      .find((search) => (search.bottom.value == column.bottom.value))
 
-    replaced[position].value = this.unused[position][0];
+    replaced.bottom.value = this.unused.bottom[0];
 
     for (let other of this.columns)
-      other[position].classList.remove("replaced");
+      other.bottom.classList.remove("replaced");
 
-    replaced[position].classList.add("replaced");
-    column[position].classList.add("replaced");
+    replaced.bottom.classList.add("replaced");
+    column.bottom.classList.add("replaced");
   }
 
   /** Count of columns inside permutation */
@@ -273,11 +300,13 @@ class Permutation {
 
         column.range = length;
         
-        column.top.value = previous + i + 1;
-        column.top.addEventListener("change", (change) => this.changehook(column, "top"));
+        column.top.value = column.top.textContent = previous + i + 1;
+        column.top.addEventListener("dragover", (drag) => drag.preventDefault());
+        column.top.addEventListener("dragstart", (drag) => this.dragging(drag));
+        column.top.addEventListener("drop", (drop) => this.drophook(drop));
         
         column.bottom.value = previous + i + 1;
-        column.bottom.addEventListener("change", (change) => this.changehook(column, "bottom"));
+        column.bottom.addEventListener("change", (change) => this.selecthook(column));
 
         this.columns.push(column);
         this.closing.insertAdjacentElement("beforebegin", column.root);
@@ -292,7 +321,7 @@ class Permutation {
       for (let column of this.columns) {
 
         if (column.top.value > this.length) 
-          column.top.value = unused.top[0], unused.top.shift();
+          column.top.value = column.top.textContent = unused.top[0], unused.top.shift();
         if (column.bottom.value > this.length) 
           column.bottom.value = unused.bottom[0], unused.bottom.shift()
 
@@ -467,7 +496,7 @@ export default class Equation {
       for (let column of perm.columns) {
 
         vindex = Math.floor(Math.random() * values.top.length);
-        column.top.value = values.top[vindex], values.top.splice(vindex, 1);
+        column.top.value = column.top.textContent = values.top[vindex], values.top.splice(vindex, 1);
 
         vindex = Math.floor(Math.random() * values.bottom.length);
         column.bottom.value = values.bottom[vindex], values.bottom.splice(vindex, 1);
