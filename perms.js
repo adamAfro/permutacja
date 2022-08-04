@@ -1,11 +1,33 @@
 import anime from "https://cdn.jsdelivr.net/gh/juliangarnier/anime@master/lib/anime.es.js";
 
+/** Layout hooks */
+const Layout = {
+  
+  /** Measures offset difference between nodes */
+  diff(/** @type Element */ x, /** @type Element */ y) {
+    
+    return {
+      top: x.offsetTop - y.offsetTop,
+      left: x.offsetLeft - y.offsetLeft
+    };
+  }
+}
+
 /** Template elements for displaying */
 const Template = {};
 try {
   
   const parser = new DOMParser();
   const parse = (html) => parser.parseFromString(html, "text/html");
+
+
+  /** @type HTMLElement, empty space */
+  Template.space = parse(/*HTML*/`
+  
+    <div style="display:inline-block"></div>
+  
+  `).querySelector("div");
+
 
 
   /** @type HTMLElement; Equation layout */
@@ -250,10 +272,10 @@ class Permutation {
     if (replacement.root.parentElement != replaced.root.parentElement)
       return;
 
-    let diff = {
-      top: replaced.root.offsetTop - replacement.root.offsetTop,
-      left: replaced.root.offsetLeft - replacement.root.offsetLeft
-    };
+    replaced.root.style.pointerEvents = "none";
+    replacement.root.style.pointerEvents = "none";
+
+    let diff = Layout.diff(replaced.root, replacement.root);
 
     replacement.root.style.transform = `translate(${diff.left}px, ${diff.top}px)`;
     let animation = anime({ targets: replaced.root, translateX: -diff.left, translateY: -diff.top });
@@ -274,6 +296,9 @@ class Permutation {
       replaced.root.replaceWith(replacement.root);
       anchor.after(replaced.root);
     }
+
+    replaced.root.style.pointerEvents = "";
+    replacement.root.style.pointerEvents = "";
   }
 
   /** Handles dragging of a column's top */
@@ -426,32 +451,83 @@ export default class Equation {
       perm.length = this.length.value;
   }
 
-  /** Solves equation and shows it */
+  /** Moves permutation to certain point of equation */
+  async move(moved, side = "right", pos = "start") {
+
+    console.log(moved);
+
+    if (side == "left") throw "not implemented move";
+
+    if (side == "right") {
+
+      console.info("defeault inversion: inversion detection is not implemented yet");
+      moved.inversion.checked = !moved.inversion.checked;
+
+      let space = Template.space.cloneNode("true");
+
+      space.style.width = "0";
+      space.style.verticalAlign = "top";
+      if (pos == "start")
+        this.sign.after(space);
+      else if (pos == "end")
+        this.root.append(space);
+      else
+        throw "unnkown position";
+
+      let grow = anime({
+        targets: space,
+        width: `${moved.root.offsetWidth}px`,
+        easing: "linear",
+        duration: 230
+      });
+
+      let diff = Layout.diff(space, moved.root);
+      let move = anime({
+        targets: moved.root,
+        translateX: diff.left,
+        translateY: diff.top
+      });
+
+      await move.finished;
+
+      let anchor = moved.root.previousElementSibling;
+      space.replaceWith(moved.root);
+      anchor.after(space);
+
+      move.pause(), move.reset();
+      moved.root.style.transform = "";
+      space.style.transform = "";
+
+      let shrink = anime({
+        targets: space,
+        width: "0",
+        easing: "linear",
+        duration: 230
+      });
+
+      await shrink.finished;
+      space.remove();
+
+      this.refresh();
+
+      return moved;
+    }
+
+    throw "unnkown side";
+  }
+
+  /** Solves equation step and shows it */
   solve() {
 
     let target = undefined;
 
     /** Move permutation before targeted one */
-    if (target = this.root.querySelector(`.permutation:not(.target ~ .permutation)`)) {
-
-      this.sign.after(target);
-      let moved = this.permutations.find((search) => (search.root == target))
-        
-      moved.inversion.checked = !moved.inversion.checked;
-
-      return moved;
-    } 
+    if (target = this.root.querySelector(`.permutation:not(.target ~ .permutation)`)) 
+      return this.move(this.permutations.find((search) => (search.root == target)), "right", "start");
 
     /** Move permutation after targeted one */
-    if (target = this.root.querySelector(`.permutation:not(.sign ~ .permutation)`)) {
-
-      this.root.append(target);
-      let moved = this.permutations.find((search) => (search.root == target))
-        
-      moved.inversion.checked = !moved.inversion.checked;
-
-      return moved;
-    }
+    if (target = this.root.querySelector(`.permutation:not(.sign ~ .permutation)`)) 
+      return this.move(this.permutations.find((search) => (search.root == target)), "right", "end");
 
     /** Inverts permutation */
     for (let permutation of this.permutations) {
