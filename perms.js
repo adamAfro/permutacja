@@ -1,3 +1,5 @@
+import anime from "https://cdn.jsdelivr.net/gh/juliangarnier/anime@master/lib/anime.es.js";
+
 /** Template elements for displaying */
 const Template = {};
 try {
@@ -228,7 +230,7 @@ class Permutation {
   }
 
   /** Applies drag effect on column that is dragged over another and the another one */
-  drophook(/** @type DragEvent */ event) {
+  async drophook(/** @type DragEvent */ event) {
 
     event.preventDefault();
 
@@ -247,7 +249,21 @@ class Permutation {
 
     if (replacement.root.parentElement != replaced.root.parentElement)
       return;
+
+    let diff = {
+      top: replaced.root.offsetTop - replacement.root.offsetTop,
+      left: replaced.root.offsetLeft - replacement.root.offsetLeft
+    };
+
+    replacement.root.style.transform = `translate(${diff.left}px, ${diff.top}px)`;
+    let animation = anime({ targets: replaced.root, translateX: -diff.left, translateY: -diff.top });
+
+    await animation.finished;
     
+    animation.pause(), animation.reset();
+    replaced.root.style.transform = "";
+    replacement.root.style.transform = "";
+
     let anchor = replacement.root.previousElementSibling;
     if (anchor === replaced.root) {
 
