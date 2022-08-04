@@ -238,17 +238,29 @@ class Permutation {
   }
 
   /** Inverts top-bottom values and changes inversion box status */
-  invert() {
+  async invert() {
 
+    let flows = [];
     for (let column of this.columns) {
 
-      let holder = column.top.value;
+      flows.push(anime({
+        targets: column.root,
+        rotateX: "90deg"
+      }).finished.then(() => {
 
-      column.top.value = column.top.textContent = column.bottom.value;
-      column.bottom.value = holder;
+        let holder = column.top.value;
+        column.top.value = column.top.textContent = column.bottom.value;
+        column.bottom.value = holder;
+
+      }).then(() => anime({
+        targets: column.root,
+        rotateX: "0deg"
+      })));
     }
 
     this.inversion.checked = !this.inversion.checked;
+
+    await Promise.all(flows);
   }
 
   /** Applies drag effect on column that is dragged over another and the another one */
