@@ -453,9 +453,9 @@ class Permutation {
     let submission = new Permutation(Template.permutation.cloneNode(true), length);
     for (let i = 0; i < length; i++) {
 
-      let replacement = next.columns[i];
-      let replaced = previous.columns
-        .find((search) => (search.index == replacement.value));
+      let replaced = previous.columns[i];
+      let replacement = next.columns
+        .find((search) => (search.index == replaced.value));
       let shift = replaced.top.offsetHeight;
 
       await Promise.all([
