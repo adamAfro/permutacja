@@ -253,7 +253,7 @@ class Permutation {
     for (let i = 0, n = this.length; i < n; i++) {
 
       let replacement = this.columns
-        .find((column) => (column.top.value == i + 1))
+        .find((column) => (column.index == i + 1))
         .root;
       
       let replaced = columns[i];
@@ -273,7 +273,7 @@ class Permutation {
     let anchor = this.opening;
     for (let i = 0, n = this.length; i < n; i++) {
 
-      let next = this.columns.find((column) => (column.top.value == i + 1));
+      let next = this.columns.find((column) => (column.index == i + 1));
 
       next.root.style.transform = "";
       anchor.after(next.root);
@@ -292,9 +292,9 @@ class Permutation {
         rotateX: "90deg"
       }).finished.then(() => {
 
-        let holder = column.top.value;
-        column.top.value = column.top.textContent = column.bottom.value;
-        column.bottom.value = holder;
+        let holder = column.index;
+        column.index = column.value;
+        column.value = holder;
 
       }).then(() => anime({
         targets: column.root,
@@ -320,7 +320,7 @@ class Permutation {
       throw "smthng wnt wrng";
 
     let replacement = this.columns
-      .find((search) => (search.top.value == value))
+      .find((search) => (search.index == value))
 
     if ((!replaced || !replacement) || replacement === replaced)
       return;
@@ -368,9 +368,9 @@ class Permutation {
   selecthook(column) {
 
     let replaced = this.columns.filter((inclusion) => (inclusion !== column))
-      .find((search) => (search.bottom.value == column.bottom.value))
+      .find((search) => (search.value == column.value))
 
-    replaced.bottom.value = this.unused.bottom[0];
+    replaced.value = this.unused.bottom[0];
 
     for (let other of this.columns)
       other.bottom.classList.remove("replaced");
@@ -401,12 +401,12 @@ class Permutation {
 
         column.range = length;
         
-        column.top.value = column.top.textContent = previous + i + 1;
+        column.index = previous + i + 1;
         column.top.addEventListener("dragover", (drag) => drag.preventDefault());
         column.top.addEventListener("dragstart", (drag) => this.dragging(drag));
         column.top.addEventListener("drop", (drop) => this.drophook(drop));
         
-        column.bottom.value = previous + i + 1;
+        column.value = previous + i + 1;
         column.bottom.addEventListener("change", (change) => this.selecthook(column));
 
         this.columns.push(column);
@@ -421,10 +421,10 @@ class Permutation {
       let unused = this.unused;
       for (let column of this.columns) {
 
-        if (column.top.value > this.length) 
-          column.top.value = column.top.textContent = unused.top[0], unused.top.shift();
+        if (column.index > this.length) 
+          column.index = unused.top[0], unused.top.shift();
         if (column.bottom.value > this.length) 
-          column.bottom.value = unused.bottom[0], unused.bottom.shift()
+          column.value = unused.bottom[0], unused.bottom.shift()
 
         column.range = length;
       }
@@ -438,11 +438,11 @@ class Permutation {
       
       top: [...Array(this.length).keys()]
         .map((i) => (i + 1))
-        .filter((i) => !this.columns.some((column) => (column.top.value == i))),
+        .filter((i) => !this.columns.some((column) => (column.index == i))),
       
       bottom: [...Array(this.length).keys()]
         .map((i) => (i + 1))
-        .filter((i) => !this.columns.some((column) => (column.bottom.value == i))) 
+        .filter((i) => !this.columns.some((column) => (column.value == i))) 
     };
   }
 
@@ -669,10 +669,10 @@ export default class Equation {
       for (let column of perm.columns) {
 
         vindex = Math.floor(Math.random() * values.top.length);
-        column.top.value = column.top.textContent = values.top[vindex], values.top.splice(vindex, 1);
+        column.index = column.top.textContent = values.top[vindex], values.top.splice(vindex, 1);
 
         vindex = Math.floor(Math.random() * values.bottom.length);
-        column.bottom.value = values.bottom[vindex], values.bottom.splice(vindex, 1);
+        column.value = values.bottom[vindex], values.bottom.splice(vindex, 1);
       }
     }
 
