@@ -46,6 +46,12 @@ button, input, select {
   .permutation .exponent input:checked + .value { opacity:1 }
 
 
+.permutation .column .value {
+
+  width: 2em; text-align: center;
+  appearance: none;
+}
+
 .permutation .column .value.replaced {
 
   transform: scale(1.1);

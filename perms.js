@@ -153,6 +153,27 @@ class Column {
     this.bottom = element.querySelector(".bottom");
   }
 
+  /** Changes column top value */
+  set index(/** @type number */ value) {
+
+    this.top.value = this.top.textContent = value;
+  }
+
+  get index() {
+
+    return parseInt(this.top.value);
+  }
+
+  set value(/** @type number */ value) {
+
+    this.bottom.value = value;
+  }
+
+  get value() {
+
+    return parseInt(this.bottom.value);
+  }
+
   /** Returns count of possible options */
   get range() {
     
@@ -425,18 +446,47 @@ class Permutation {
     };
   }
 
-  /** Returns submission its product */
-  static apply(/** @type Permutation */ previous, /** @type Permutation */ next, /** @type number */ length = previous.length) {
+  /** Performs submission animation */
+  static async submit(/** @type Permutation */ previous, /** @type Permutation */ next, /** @type number */ length = previous.length) {
 
-    let permutation = new Permutation(Template.permutation.cloneNode(true), length);
+    let diff = Layout.diff(previous.root, next.root);
+    let submission = new Permutation(Template.permutation.cloneNode(true), length);
     for (let i = 0; i < length; i++) {
 
-      permutation.columns[i].top.value = next.columns[i].top.value;
-      permutation.columns[i].bottom.value = previous.columns
-        .find((match) => (match.top.value == next.columns[i].bottom.value)).bottom.value;
+      let replacement = next.columns[i];
+      let replaced = previous.columns
+        .find((search) => (search.index == replacement.value));
+      let shift = replaced.top.offsetHeight;
+
+      await Promise.all([
+
+        anime({
+          targets: replacement.root,
+          translateX: `${diff.left - replacement.root.offsetLeft + replaced.root.offsetLeft}px`,
+          translateY: `${diff.top + replaced.root.offsetTop - replacement.root.offsetHeight + shift*.5}px`
+        }).finished,
+
+        anime({
+          targets: replaced.root,
+          translateY: `${shift*1.5}px`
+        }).finished
+      ]);
+
+      await Promise.all([
+        anime({ targets: [replaced.top, replacement.bottom], opacity: 0 }).finished,
+        anime({ targets: replacement.root, translateY: `${diff.top}px` }).finished,
+        anime({ targets: replaced.root, translateY: 0 }).finished
+      ]);
+
+      submission.columns[i].index = replacement.index;
+      submission.columns[i].value = replaced.value;
     }
 
-    return permutation;
+    previous.root.after(submission.root);
+    previous.root.remove();
+    next.root.remove();
+
+    return submission;
   }
 }
 
@@ -487,9 +537,7 @@ export default class Equation {
   }
 
   /** Moves permutation to certain point of equation */
-  async move(moved, side = "right", pos = "start") {
-
-    console.log(moved);
+  async move(/** @type Permutation */moved, side = "right", pos = "start") {
 
     if (side == "left") throw "not implemented move";
 
@@ -552,7 +600,7 @@ export default class Equation {
   }
 
   /** Solves equation step and shows it */
-  solve() {
+  async solve() {
 
     let target = undefined;
 
@@ -580,22 +628,16 @@ export default class Equation {
     if (targets.length >= 2) {
 
       targets = [
-        this.permutations.find((perm) => (perm.root === targets[targets.length - 1])),
-        this.permutations.find((perm) => (perm.root === targets[targets.length - 2]))
+        this.permutations.find((perm) => (perm.root === targets[targets.length - 2])),
+        this.permutations.find((perm) => (perm.root === targets[targets.length - 1]))
       ];
 
       this.permutations = this.permutations
         .filter((keep) => !(targets.includes(keep)));
 
-      let product = Permutation.apply(...targets);
+      let product = await Permutation.submit(...targets);
 
       this.permutations.push(product);
-      targets[1].root.after(product.root);
-      
-      targets[0].root.remove();
-      targets[1].root.remove();
-
-      product.sort();
 
       return product;
     }
