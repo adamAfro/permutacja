@@ -446,6 +446,26 @@ class Permutation {
     };
   }
 
+  /** Visually hides permutation */
+  async vanish() {
+
+    let holder = Template.holder.cloneNode("true");
+
+    holder.style.width = `${this.root.offsetWidth}px`;
+    holder.style.verticalAlign = "top";
+
+    this.root.style.position = "absolute";
+    this.root.after(holder);
+    
+    await Promise.all([
+      anime({ targets: holder, width: 0, easing: "linear", duration: 240 }).finished,
+      anime({ targets: this.root, scale: 0, opacity: 0, duration: 480 }).finished
+    ]);
+
+    holder.remove();
+    this.root.remove();
+  }
+
   /** Performs submission animation */
   static async submit(/** @type Permutation */ previous, /** @type Permutation */ next, /** @type number */ length = previous.length) {
 
@@ -484,6 +504,7 @@ class Permutation {
 
     previous.root.after(submission.root);
     previous.root.remove();
+    await next.vanish();
     next.root.remove();
 
     return submission;
@@ -632,11 +653,10 @@ export default class Equation {
         this.permutations.find((perm) => (perm.root === targets[targets.length - 1]))
       ];
 
-      this.permutations = this.permutations
-        .filter((keep) => !(targets.includes(keep)));
-
       let product = await Permutation.submit(...targets);
 
+      this.permutations = this.permutations
+        .filter((keep) => !(targets.includes(keep)));
       this.permutations.push(product);
 
       return product;
@@ -702,15 +722,19 @@ export default class Equation {
     else
       container.replaceWith(perm.root); 
 
-    perm.removal.addEventListener("click", (click) => {
-
-      perm.root.remove(), this.permutations = this.permutations
-        .filter((keep) => (keep !== perm));
-
-      this.refresh();
-    });
+    perm.removal.addEventListener("click", (click) => this.remove(perm));
 
     return perm;
+  }
+
+  async remove(/** @type Permutation*/ removed) {
+
+    await removed.vanish();
+    removed.root.remove(); 
+    this.permutations = this.permutations
+      .filter((keep) => (keep !== removed));
+
+    this.refresh();
   }
 
   /** Checks if placeholders are displayed and it is possible to add permutations */
