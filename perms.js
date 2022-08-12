@@ -41,14 +41,14 @@ try {
           +
         </button>
 
-        <label class="button dim">
-          <span>n = </span>
-          <input name="length" type="number" min="2" max="9" value="3">
-        </label>
-
       </header>
 
-      <div class="symbol target" style="display:inline-block">&#963;</div>
+      <label class="symbol target" style="display:inline-block">
+        &#963;
+        <sub><small>
+          <input style="width:2em" name="length" type="number" min="2" max="9" value="3">
+        </small></sub>
+      </label>
       <button class="symbol sign" style="display:inline-block">=</button>
 
     </div>
@@ -289,7 +289,8 @@ class Permutation {
 
       flows.push(anime({
         targets: column.root,
-        rotateX: "90deg"
+        rotateX: "90deg",
+        easing: "easeInExpo", duration: 250
       }).finished.then(() => {
 
         let holder = column.index;
@@ -298,7 +299,8 @@ class Permutation {
 
       }).then(() => anime({
         targets: column.root,
-        rotateX: "0deg"
+        rotateX: "0deg",
+        easing: "easeInOutCubic", duration: 250
       })));
     }
 
@@ -557,60 +559,70 @@ export default class Equation {
       perm.length = this.length.value;
   }
 
-  /** Moves permutation to certain point of equation */
+  /** Moves permutation from one side of equation to another */
   async move(/** @type Permutation */moved, side = "right", pos = "start") {
+
+    const duration = 500;
 
     if (side == "left") throw "not implemented move";
 
     if (side == "right") {
 
-      console.info("defeault inversion: inversion detection is not implemented yet");
       moved.inversion.checked = !moved.inversion.checked;
+      moved.root.style.position = "absolute";
 
-      let holder = Template.holder.cloneNode("true");
+      let begin = Template.holder.cloneNode("true");
+      moved.root.after(begin);
+      begin.style.width = `${moved.root.offsetWidth}px`;
+      begin.style.verticalAlign = "top";
 
-      holder.style.width = "0";
-      holder.style.verticalAlign = "top";
+      let shrink = anime({
+        targets: begin, duration,
+        width: `0px`,
+        easing: "easeInOutCubic"
+      });
+
+      let landing = Template.holder.cloneNode("true");
+      landing.style.width = "0";      
+      landing.style.verticalAlign = "top";
       if (pos == "start")
-        this.sign.after(holder);
+        this.sign.after(landing);
       else if (pos == "end")
-        this.root.append(holder);
+        this.root.append(landing);
       else
         throw "unnkown position";
 
       let grow = anime({
-        targets: holder,
+        targets: landing, duration,
         width: `${moved.root.offsetWidth}px`,
-        easing: "linear",
-        duration: 230
+        easing: "easeInOutCubic"
       });
 
-      let diff = Layout.diff(holder, moved.root);
-      let move = anime({
+      await Promise.all([
+        shrink.finished, grow.finished,
+        anime({
+          targets: moved.root, duration:  duration*1.5,
+          translateY: `${-moved.root.offsetHeight}px`
+        }).finished
+      ]);
+
+      let diff = Layout.diff(landing, begin);
+      await anime({
         targets: moved.root,
-        translateX: diff.left,
-        translateY: diff.top
-      });
-
-      await move.finished;
+        rotateZ: "0", opacity: 1,
+        translateX: `${diff.left}px`,
+        translateY: `${diff.top}px`,
+        easing: "easeOutBack"
+      }).finished;
 
       let anchor = moved.root.previousElementSibling;
-      holder.replaceWith(moved.root);
-      anchor.after(holder);
 
-      move.pause(), move.reset();
-      moved.root.style.transform = "";
-      holder.style.transform = "";
-
-      let shrink = anime({
-        targets: holder,
-        width: "0",
-        easing: "linear",
-        duration: 230
-      });
-
-      await shrink.finished;
-      holder.remove();
+      landing.replaceWith(moved.root);
+      moved.root.style.transform = "translate(0,0)";
+      moved.root.style.position = "";
+      anchor.after(landing);
+      landing.remove();
+      begin.remove();
 
       this.refresh();
 

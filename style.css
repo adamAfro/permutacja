@@ -25,14 +25,11 @@ button, input, select {
 
 } .button:focus, .button:active { outline: thin solid;}
 
-.symbol { font-size: 170%; margin: 0 .5em;}
-.symbol + .symbol { margin-left: 0;}
 .equation .sign { cursor: alias;}
-
 .equation .placeholder {
   
   cursor: copy; border-radius: 1em;
-} 
+}
 
 .permutation .interactions {
   transform: translateX(.5em);
