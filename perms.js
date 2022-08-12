@@ -367,18 +367,19 @@ class Permutation {
   }
 
   /** Applies changed bottom of a column - changes its duplicate - one that had the value before */
-  selecthook(column) {
+  async selecthook(selected) {
 
-    let replaced = this.columns.filter((inclusion) => (inclusion !== column))
-      .find((search) => (search.value == column.value))
+    let replaced = this.columns.filter((inclusion) => (inclusion !== selected))
+      .find((search) => (search.value == selected.value))
 
     replaced.value = this.unused.bottom[0];
-
-    for (let other of this.columns)
-      other.bottom.classList.remove("replaced");
-
-    replaced.bottom.classList.add("replaced");
-    column.bottom.classList.add("replaced");
+    
+    let diff = Layout.diff(selected.root, replaced.root);
+    replaced.bottom.style.transform = `translateX(${diff.left}px) translateY(${diff.top}px)`;
+    await anime({
+      targets: replaced.bottom,
+      translateX: 0, translateY: 0
+    }).finished;
   }
 
   /** Count of columns inside permutation */
